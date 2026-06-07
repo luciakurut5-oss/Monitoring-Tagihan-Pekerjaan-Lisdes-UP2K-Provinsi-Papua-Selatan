@@ -96,6 +96,7 @@ function isTerlambat(item){
 
 function statusBadge(status){
   if(status === "Selesai dibayar") return "green";
+  if(status === "Belum upload VIP") return "red";
   if(status === "Revisi vendor") return "orange";
   if(status === "Pengajuan pembayaran" || status === "Approval manajemen") return "yellow";
   if(status === "Verifikasi dokumen") return "blue";
@@ -183,7 +184,7 @@ async function hapusData(id){
 }
 
 async function naikStatus(id){
-  const urutan = ["Dokumen diterima","Verifikasi dokumen","Revisi vendor","Approval manajemen","Pengajuan pembayaran","Selesai dibayar"];
+  const urutan = ["Dokumen diterima","Verifikasi dokumen","Belum upload VIP","Revisi vendor","Approval manajemen","Pengajuan pembayaran","Selesai dibayar"];
   const item = data.find(x => x.id === id);
   if(!item) return;
   const posisi = urutan.indexOf(item.status);
@@ -250,18 +251,21 @@ function render(){
 
   const tagihanTerbayar = data.filter(x => x.status === "Selesai dibayar");
   const tagihanBelumTerbayar = data.filter(x => x.status !== "Selesai dibayar");
+  const tagihanBelumUploadVip = data.filter(x => x.status === "Belum upload VIP");
 
   const totalNilaiTagihan = data.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
   const totalNilaiTerbayar = tagihanTerbayar.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
   const totalNilaiBelumTerbayar = tagihanBelumTerbayar.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
+  const totalNilaiBelumUploadVip = tagihanBelumUploadVip.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
 
   document.getElementById("totalTagihan").textContent = data.length;
   document.getElementById("dalamProses").textContent = tagihanBelumTerbayar.length;
-  document.getElementById("terlambat").textContent = data.filter(x => isTerlambat(x)).length;
+  document.getElementById("belumUploadVip").textContent = tagihanBelumUploadVip.length;
   document.getElementById("selesai").textContent = tagihanTerbayar.length;
   document.getElementById("totalNilai").textContent = rupiah(totalNilaiTagihan);
   document.getElementById("totalTerbayar").textContent = rupiah(totalNilaiTerbayar);
   document.getElementById("totalBelumTerbayar").textContent = rupiah(totalNilaiBelumTerbayar);
+  document.getElementById("totalBelumUploadVip").textContent = rupiah(totalNilaiBelumUploadVip);
 }
 
 function exportCSV(){
