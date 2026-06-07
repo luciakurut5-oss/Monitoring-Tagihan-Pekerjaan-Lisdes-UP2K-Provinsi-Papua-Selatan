@@ -248,11 +248,20 @@ function render(){
     tabel.appendChild(tr);
   });
 
+  const tagihanTerbayar = data.filter(x => x.status === "Selesai dibayar");
+  const tagihanBelumTerbayar = data.filter(x => x.status !== "Selesai dibayar");
+
+  const totalNilaiTagihan = data.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
+  const totalNilaiTerbayar = tagihanTerbayar.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
+  const totalNilaiBelumTerbayar = tagihanBelumTerbayar.reduce((s, x) => s + Number(x.nilaiTagihan || 0), 0);
+
   document.getElementById("totalTagihan").textContent = data.length;
-  document.getElementById("dalamProses").textContent = data.filter(x => x.status !== "Selesai dibayar").length;
+  document.getElementById("dalamProses").textContent = tagihanBelumTerbayar.length;
   document.getElementById("terlambat").textContent = data.filter(x => isTerlambat(x)).length;
-  document.getElementById("selesai").textContent = data.filter(x => x.status === "Selesai dibayar").length;
-  document.getElementById("totalNilai").textContent = rupiah(data.reduce((s,x)=>s+Number(x.nilaiTagihan||0),0));
+  document.getElementById("selesai").textContent = tagihanTerbayar.length;
+  document.getElementById("totalNilai").textContent = rupiah(totalNilaiTagihan);
+  document.getElementById("totalTerbayar").textContent = rupiah(totalNilaiTerbayar);
+  document.getElementById("totalBelumTerbayar").textContent = rupiah(totalNilaiBelumTerbayar);
 }
 
 function exportCSV(){

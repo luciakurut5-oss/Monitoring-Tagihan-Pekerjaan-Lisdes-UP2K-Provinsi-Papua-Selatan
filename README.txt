@@ -23,3 +23,9 @@ Catatan penting:
 4. Jika data tidak muncul, buka Console browser atau cek Firestore Rules.
 5. Login di file ini masih login sederhana di sisi browser, bukan Firebase Authentication.
    Untuk keamanan kantor yang lebih kuat, perlu tahap lanjutan menggunakan Firebase Authentication dan Rules khusus user.
+
+
+UPDATE PEMISAHAN NILAI TAGIHAN:
+- Dashboard sekarang menampilkan Total Nilai Tagihan, Nilai Tagihan Terbayar, dan Nilai Tagihan Belum Terbayar.
+- Tagihan dianggap terbayar jika statusnya persis "Selesai dibayar".
+- Data kontrak/tagihan yang sudah tersimpan di Firebase tetap aman dan tidak perlu diinput ulang.
