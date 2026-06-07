@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Monitoring Pembayaran Tagihan</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">MT</div>
+      <h2>Login Monitoring Tagihan</h2>
+      <p>Masuk untuk mengakses dashboard monitoring pembayaran.</p>
+      <form id="loginForm">
+        <label>Username</label>
+        <input id="loginUsername" autocomplete="username" placeholder="Masukkan username" required />
+        <label>Password</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Masukkan password" required />
+        <button type="submit">Login</button>
+        <div id="loginError" class="login-error"></div>
+      </form>
+      <div class="login-help">
+        <b>User default:</b><br>
+        admin / admin123<br>
+        manager / manager123<br>
+        operator / operator123
+      </div>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell">  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">MT</div>
+      <div>
+        <h1>Monitoring Tagihan</h1>
+        <small>Kontrak • Invoice • Pembayaran</small>
+      </div>
+    </div>
+    <div class="user-box">
+      <span id="userInfo">Belum login</span>
+      <button type="button" onclick="logout()">Logout</button>
+    </div>
+    <nav>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#input">Input Data</a>
+      <a href="#monitoring">Monitoring</a>
+      <a href="#panduan">Panduan</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <section id="dashboard" class="hero">
+      <div>
+        <p class="eyebrow">Executive Summary</p>
+        <h2>Dashboard Monitoring Proses Pembayaran Tagihan</h2>
+        <p>Memantau progres pekerjaan rutin mulai dari dokumen diterima, verifikasi, revisi, approval, proses pembayaran, sampai selesai dibayar.</p>
+      </div>
+      <button onclick="exportCSV()">Export CSV</button>
+    </section>
+
+    <section class="cards">
+      <div class="card"><span>Total Tagihan</span><strong id="totalTagihan">0</strong></div>
+      <div class="card"><span>Dalam Proses</span><strong id="dalamProses">0</strong></div>
+      <div class="card"><span>Terlambat</span><strong id="terlambat">0</strong></div>
+      <div class="card"><span>Selesai Dibayar</span><strong id="selesai">0</strong></div>
+      <div class="card wide"><span>Total Nilai Tagihan</span><strong id="totalNilai">Rp0</strong></div>
+    </section>
+
+    <section class="status-grid">
+      <div class="status-box green">Selesai Dibayar</div>
+      <div class="status-box yellow">Dalam Proses</div>
+      <div class="status-box orange">Menunggu Revisi</div>
+      <div class="status-box red">Terlambat / Lewat Target</div>
+    </section>
+
+    <section id="input" class="panel">
+      <div class="section-title">
+        <h3>Input Data Tagihan</h3>
+        <p>Isi data kontrak, invoice, target pembayaran, PIC, dan status proses.</p>
+      </div>
+
+      <form id="formTagihan">
+        <div class="field">
+          <label>Nama Pekerjaan</label>
+          <input id="namaPekerjaan" required placeholder="Contoh: Pekerjaan rutin pemeliharaan jaringan" />
+        </div>
+
+        <div class="field">
+          <label>Kabupaten / Lokasi</label>
+          <input id="lokasi" placeholder="Contoh: Merauke / Mappi / Boven Digoel" />
+        </div>
+
+        <div class="field">
+          <label>Nama Penyedia / Vendor</label>
+          <input id="vendor" required placeholder="Nama perusahaan penyedia" />
+        </div>
+
+        <div class="field">
+          <label>Nomor Kontrak / SPK</label>
+          <input id="nomorKontrak" placeholder="Nomor kontrak atau SPK" />
+        </div>
+
+        <div class="field">
+          <label>Nilai Kontrak</label>
+          <input id="nilaiKontrak" type="number" placeholder="Contoh: 500000000" />
+        </div>
+
+        <div class="field">
+          <label>Nilai Tagihan</label>
+          <input id="nilaiTagihan" type="number" required placeholder="Contoh: 150000000" />
+        </div>
+
+        <div class="field">
+          <label>Nomor Invoice</label>
+          <input id="nomorInvoice" placeholder="Nomor invoice" />
+        </div>
+
+        <div class="field">
+          <label>Tanggal Invoice</label>
+          <input id="tanggalInvoice" type="date" />
+        </div>
+
+        <div class="field">
+          <label>Tanggal Masuk Dokumen</label>
+          <input id="tanggalMasuk" type="date" required />
+        </div>
+
+        <div class="field">
+          <label>Target Pembayaran</label>
+          <input id="targetBayar" type="date" required />
+        </div>
+
+        <div class="field">
+          <label>PIC / Penanggung Jawab</label>
+          <input id="pic" placeholder="Nama PIC" />
+        </div>
+
+        <div class="field">
+          <label>Status Proses</label>
+          <select id="status" required>
+            <option value="Dokumen diterima">Dokumen diterima</option>
+            <option value="Verifikasi dokumen">Verifikasi dokumen</option>
+            <option value="Revisi vendor">Revisi vendor</option>
+            <option value="Approval manajemen">Approval manajemen</option>
+            <option value="Pengajuan pembayaran">Pengajuan pembayaran</option>
+            <option value="Selesai dibayar">Selesai dibayar</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Catatan / Kendala</label>
+          <textarea id="catatan" placeholder="Contoh: menunggu revisi BAPP / invoice / faktur pajak"></textarea>
+        </div>
+
+        <div class="actions full">
+          <button type="submit" id="submitBtn">Simpan Data</button>
+          <button type="button" class="secondary" onclick="resetForm()">Reset Form</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="monitoring" class="panel">
+      <div class="section-title row">
+        <div>
+          <h3>Monitoring Tagihan</h3>
+          <p>Gunakan filter untuk melihat status tagihan tertentu.</p>
+        </div>
+        <div class="filters">
+          <input id="search" placeholder="Cari pekerjaan, vendor, invoice, PIC..." />
+          <select id="filterStatus">
+            <option value="">Semua Status</option>
+            <option value="Dokumen diterima">Dokumen diterima</option>
+            <option value="Verifikasi dokumen">Verifikasi dokumen</option>
+            <option value="Revisi vendor">Revisi vendor</option>
+            <option value="Approval manajemen">Approval manajemen</option>
+            <option value="Pengajuan pembayaran">Pengajuan pembayaran</option>
+            <option value="Selesai dibayar">Selesai dibayar</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pekerjaan</th>
+              <th>Vendor</th>
+              <th>Kontrak/SPK</th>
+              <th>Invoice</th>
+              <th>Nilai Tagihan</th>
+              <th>Masuk Dokumen</th>
+              <th>Target Bayar</th>
+              <th>Umur</th>
+              <th>Status</th>
+              <th>SLA</th>
+              <th>PIC</th>
+              <th>Catatan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelTagihan"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panduan" class="panel guide">
+      <h3>Panduan Singkat</h3>
+      <p><b>Umur tagihan</b> dihitung dari tanggal masuk dokumen sampai hari ini. <b>SLA</b> otomatis menjadi terlambat bila belum selesai dibayar dan sudah melewati target pembayaran.</p>
+      <p>Data tersimpan di browser perangkat ini. Untuk penggunaan kantor bersama, versi berikutnya bisa dibuat memakai database/server.</p>
+    </section>
+  </main>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
