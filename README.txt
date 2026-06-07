@@ -1,33 +1,25 @@
-PANDUAN WEBSITE MONITORING PEMBAYARAN TAGIHAN
+PANDUAN WEBSITE MONITORING PEMBAYARAN TAGIHAN - VERSI FIREBASE
 
-Cara membuka:
-1. Ekstrak file ZIP.
-2. Buka folder monitoring_pembayaran_profesional.
-3. Klik dua kali file index.html.
-4. Website akan terbuka di browser.
+File ini sudah siap di-upload ke GitHub Pages.
+
+File yang harus ada di repository GitHub:
+1. index.html
+2. style.css
+3. script.js
+4. README.txt atau README.md
 
 Fitur:
-- Dashboard ringkasan total tagihan.
-- Total nilai tagihan.
-- Monitoring status proses pembayaran.
-- Perhitungan umur tagihan otomatis.
-- Indikator SLA: On Progress, Terlambat, Selesai.
-- Input data kontrak/SPK, vendor, invoice, PIC, target bayar.
-- Edit, hapus, dan update status.
-- Export data ke CSV yang bisa dibuka di Excel.
+- Login sederhana: admin/admin123, manager/manager123, operator/operator123
+- Data monitoring disimpan di Firebase Firestore
+- Data dapat dilihat bersama oleh tim dari perangkat berbeda
+- Tambah, edit, hapus, update status
+- Dashboard ringkasan otomatis
+- Export CSV
 
-Catatan:
-Data tersimpan di Local Storage browser.
-Jika dibuka di komputer/browser lain, datanya tidak otomatis ikut pindah.
-Untuk penggunaan multi-user kantor, perlu dibuat versi database/server.
-
-
-LOGIN DEFAULT:
-- admin / admin123 (Administrator)
-- manager / manager123 (Manager)
-- operator / operator123 (Operator)
-
-CATATAN DATA LAMA:
-Versi login ini tetap menggunakan penyimpanan Local Storage dengan key: monitoringPembayaran.
-Artinya data lama yang sudah diinput tetap terbaca selama dibuka dari browser dan lokasi file yang sama.
-Sebelum mengganti file, tetap disarankan export CSV sebagai backup.
+Catatan penting:
+1. Pastikan Firebase Firestore sudah dibuat.
+2. Pastikan Firestore Rules masih dalam test mode saat uji coba.
+3. Setelah upload ke GitHub, tunggu 1-3 menit agar GitHub Pages update.
+4. Jika data tidak muncul, buka Console browser atau cek Firestore Rules.
+5. Login di file ini masih login sederhana di sisi browser, bukan Firebase Authentication.
+   Untuk keamanan kantor yang lebih kuat, perlu tahap lanjutan menggunakan Firebase Authentication dan Rules khusus user.

@@ -1,9 +1,44 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBW9uHdIYhRtI_soxh4kZmEc-c3GuDjwBM",
+  authDomain: "monitoring-pembayaran-up2kps.firebaseapp.com",
+  projectId: "monitoring-pembayaran-up2kps",
+  storageBucket: "monitoring-pembayaran-up2kps.firebasestorage.app",
+  messagingSenderId: "858366238783",
+  appId: "1:858366238783:web:417f26d52e56ac6729988a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const tagihanRef = collection(db, "monitoringTagihan");
 
 const users = [
   { username: "admin", password: "admin123", role: "Administrator" },
   { username: "manager", password: "manager123", role: "Manager" },
   { username: "operator", password: "operator123", role: "Operator" }
 ];
+
+let editId = null;
+let data = [];
+
+const form = document.getElementById("formTagihan");
+const tabel = document.getElementById("tabelTagihan");
+const search = document.getElementById("search");
+const filterStatus = document.getElementById("filterStatus");
+const submitBtn = document.getElementById("submitBtn");
 
 function getCurrentUser(){
   return JSON.parse(sessionStorage.getItem("monitoringUser") || "null");
@@ -28,71 +63,12 @@ function logout(){
   showApp();
 }
 
-document.addEventListener("DOMContentLoaded", function(){
-  const loginForm = document.getElementById("loginForm");
-  loginForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    const username = document.getElementById("loginUsername").value.trim();
-    const password = document.getElementById("loginPassword").value;
-    const found = users.find(u => u.username === username && u.password === password);
-    if(found){
-      sessionStorage.setItem("monitoringUser", JSON.stringify({ username: found.username, role: found.role }));
-      document.getElementById("loginPassword").value = "";
-      document.getElementById("loginError").textContent = "";
-      showApp();
-    } else {
-      document.getElementById("loginError").textContent = "Username atau password salah.";
-    }
-  });
-  showApp();
-});
-
-let editIndex = null;
-
-let data = JSON.parse(localStorage.getItem("monitoringPembayaran")) || [
-  {
-    namaPekerjaan:"Pemeliharaan jaringan distribusi",
-    lokasi:"Merauke",
-    vendor:"PT Contoh Energi",
-    nomorKontrak:"SPK-001/2026",
-    nilaiKontrak:500000000,
-    nilaiTagihan:125000000,
-    nomorInvoice:"INV-001/VI/2026",
-    tanggalInvoice:"2026-06-01",
-    tanggalMasuk:"2026-06-03",
-    targetBayar:"2026-06-20",
-    pic:"Admin Teknik",
-    status:"Verifikasi dokumen",
-    catatan:"Menunggu pengecekan dokumen pendukung."
-  },
-  {
-    namaPekerjaan:"Pekerjaan rutin operasional",
-    lokasi:"Mappi",
-    vendor:"CV Sinar Papua",
-    nomorKontrak:"SPK-002/2026",
-    nilaiKontrak:250000000,
-    nilaiTagihan:75000000,
-    nomorInvoice:"INV-002/VI/2026",
-    tanggalInvoice:"2026-05-25",
-    tanggalMasuk:"2026-05-27",
-    targetBayar:"2026-06-05",
-    pic:"Keuangan",
-    status:"Pengajuan pembayaran",
-    catatan:"Sudah diajukan ke pembayaran."
-  }
-];
-
-const form = document.getElementById("formTagihan");
-const tabel = document.getElementById("tabelTagihan");
-const search = document.getElementById("search");
-const filterStatus = document.getElementById("filterStatus");
-
 function rupiah(v){
-  return new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(v||0));
-}
-
-function simpan(){
-  localStorage.setItem("monitoringPembayaran", JSON.stringify(data));
+  return new Intl.NumberFormat("id-ID",{
+    style:"currency",
+    currency:"IDR",
+    maximumFractionDigits:0
+  }).format(Number(v || 0));
 }
 
 function hariIni(){
@@ -105,13 +81,16 @@ function selisihHari(tanggal){
   if(!tanggal) return "-";
   const a = new Date(tanggal);
   a.setHours(0,0,0,0);
+  if(Number.isNaN(a.getTime())) return "-";
   return Math.max(0, Math.floor((hariIni() - a) / (1000*60*60*24)));
 }
 
 function isTerlambat(item){
   if(item.status === "Selesai dibayar") return false;
+  if(!item.targetBayar) return false;
   const target = new Date(item.targetBayar);
   target.setHours(0,0,0,0);
+  if(Number.isNaN(target.getTime())) return false;
   return hariIni() > target;
 }
 
@@ -124,79 +103,108 @@ function statusBadge(status){
 }
 
 function getFormData(){
+  const user = getCurrentUser();
   return {
-    namaPekerjaan: document.getElementById("namaPekerjaan").value,
-    lokasi: document.getElementById("lokasi").value,
-    vendor: document.getElementById("vendor").value,
-    nomorKontrak: document.getElementById("nomorKontrak").value,
+    namaPekerjaan: document.getElementById("namaPekerjaan").value.trim(),
+    lokasi: document.getElementById("lokasi").value.trim(),
+    vendor: document.getElementById("vendor").value.trim(),
+    nomorKontrak: document.getElementById("nomorKontrak").value.trim(),
     nilaiKontrak: Number(document.getElementById("nilaiKontrak").value || 0),
     nilaiTagihan: Number(document.getElementById("nilaiTagihan").value || 0),
-    nomorInvoice: document.getElementById("nomorInvoice").value,
+    nomorInvoice: document.getElementById("nomorInvoice").value.trim(),
     tanggalInvoice: document.getElementById("tanggalInvoice").value,
     tanggalMasuk: document.getElementById("tanggalMasuk").value,
     targetBayar: document.getElementById("targetBayar").value,
-    pic: document.getElementById("pic").value,
+    pic: document.getElementById("pic").value.trim(),
     status: document.getElementById("status").value,
-    catatan: document.getElementById("catatan").value
+    catatan: document.getElementById("catatan").value.trim(),
+    updatedBy: user ? user.username : "unknown",
+    updatedAt: serverTimestamp()
   };
 }
 
 function setFormData(item){
   for(const key in item){
     const el = document.getElementById(key);
-    if(el) el.value = item[key];
+    if(el) el.value = item[key] ?? "";
   }
 }
 
-form.addEventListener("submit", e => {
+async function handleSubmit(e){
   e.preventDefault();
   const item = getFormData();
 
-  if(editIndex === null){
-    data.push(item);
-  } else {
-    data[editIndex] = item;
-    editIndex = null;
-    document.getElementById("submitBtn").textContent = "Simpan Data";
-  }
+  try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = editId ? "Mengupdate..." : "Menyimpan...";
 
-  simpan();
-  resetForm();
-  render();
-});
+    if(editId){
+      await updateDoc(doc(db, "monitoringTagihan", editId), item);
+    } else {
+      await addDoc(tagihanRef, {
+        ...item,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    resetForm();
+  } catch (error) {
+    console.error(error);
+    alert("Data gagal disimpan. Cek koneksi internet dan Rules Firestore.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Simpan Data";
+  }
+}
 
 function resetForm(){
   form.reset();
-  editIndex = null;
-  document.getElementById("submitBtn").textContent = "Simpan Data";
+  editId = null;
+  submitBtn.textContent = "Simpan Data";
 }
 
-function editData(i){
-  editIndex = i;
-  setFormData(data[i]);
-  document.getElementById("submitBtn").textContent = "Update Data";
+function editData(id){
+  const item = data.find(x => x.id === id);
+  if(!item) return;
+  editId = id;
+  setFormData(item);
+  submitBtn.textContent = "Update Data";
   location.hash = "#input";
 }
 
-function hapusData(i){
-  if(confirm("Yakin ingin menghapus data tagihan ini?")){
-    data.splice(i,1);
-    simpan();
-    render();
+async function hapusData(id){
+  if(!confirm("Yakin ingin menghapus data tagihan ini?")) return;
+  try {
+    await deleteDoc(doc(db, "monitoringTagihan", id));
+  } catch (error) {
+    console.error(error);
+    alert("Data gagal dihapus. Cek koneksi internet dan Rules Firestore.");
   }
 }
 
-function naikStatus(i){
+async function naikStatus(id){
   const urutan = ["Dokumen diterima","Verifikasi dokumen","Revisi vendor","Approval manajemen","Pengajuan pembayaran","Selesai dibayar"];
-  const posisi = urutan.indexOf(data[i].status);
-  data[i].status = urutan[(posisi + 1) % urutan.length];
-  simpan();
-  render();
+  const item = data.find(x => x.id === id);
+  if(!item) return;
+  const posisi = urutan.indexOf(item.status);
+  const statusBaru = urutan[(posisi + 1) % urutan.length];
+  const user = getCurrentUser();
+
+  try {
+    await updateDoc(doc(db, "monitoringTagihan", id), {
+      status: statusBaru,
+      updatedBy: user ? user.username : "unknown",
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error(error);
+    alert("Status gagal diupdate. Cek koneksi internet dan Rules Firestore.");
+  }
 }
 
 function render(){
-  const keyword = search.value.toLowerCase();
-  const statusFilter = filterStatus.value;
+  const keyword = (search?.value || "").toLowerCase();
+  const statusFilter = filterStatus?.value || "";
 
   const filtered = data.filter(item => {
     const cocokKeyword = Object.values(item).join(" ").toLowerCase().includes(keyword);
@@ -205,8 +213,14 @@ function render(){
   });
 
   tabel.innerHTML = "";
+
+  if(filtered.length === 0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="13">Belum ada data monitoring. Silakan input data tagihan/kontrak.</td>`;
+    tabel.appendChild(tr);
+  }
+
   filtered.forEach(item => {
-    const realIndex = data.indexOf(item);
     const terlambat = isTerlambat(item);
     const slaClass = item.status === "Selesai dibayar" ? "green" : terlambat ? "red" : "yellow";
     const slaText = item.status === "Selesai dibayar" ? "Selesai" : terlambat ? "Terlambat" : "On Progress";
@@ -221,14 +235,14 @@ function render(){
       <td>${item.tanggalMasuk || "-"}</td>
       <td>${item.targetBayar || "-"}</td>
       <td>${selisihHari(item.tanggalMasuk)} hari</td>
-      <td><span class="badge ${statusBadge(item.status)}">${item.status}</span></td>
+      <td><span class="badge ${statusBadge(item.status)}">${item.status || "-"}</span></td>
       <td><span class="badge ${slaClass}">${slaText}</span></td>
       <td>${item.pic || "-"}</td>
       <td>${item.catatan || "-"}</td>
       <td class="action-cell">
-        <button onclick="naikStatus(${realIndex})">Status</button>
-        <button class="secondary" onclick="editData(${realIndex})">Edit</button>
-        <button class="danger" onclick="hapusData(${realIndex})">Hapus</button>
+        <button onclick="naikStatus('${item.id}')">Status</button>
+        <button class="secondary" onclick="editData('${item.id}')">Edit</button>
+        <button class="danger" onclick="hapusData('${item.id}')">Hapus</button>
       </td>
     `;
     tabel.appendChild(tr);
@@ -257,6 +271,51 @@ function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
+function startRealtimeListener(){
+  try {
+    const q = query(tagihanRef, orderBy("createdAt", "desc"));
+    onSnapshot(q, snapshot => {
+      data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    }, error => {
+      console.error(error);
+      alert("Gagal membaca data Firebase. Pastikan Firestore Rules masih test mode dan internet aktif.");
+    });
+  } catch (error) {
+    console.error(error);
+    alert("Firebase belum berhasil terhubung. Periksa konfigurasi Firebase di script.js.");
+  }
+}
+
+function setupLogin(){
+  const loginForm = document.getElementById("loginForm");
+  loginForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const found = users.find(u => u.username === username && u.password === password);
+    if(found){
+      sessionStorage.setItem("monitoringUser", JSON.stringify({ username: found.username, role: found.role }));
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("loginError").textContent = "";
+      showApp();
+    } else {
+      document.getElementById("loginError").textContent = "Username atau password salah.";
+    }
+  });
+  showApp();
+}
+
+form.addEventListener("submit", handleSubmit);
 search.addEventListener("input", render);
 filterStatus.addEventListener("change", render);
-render();
+
+window.logout = logout;
+window.resetForm = resetForm;
+window.editData = editData;
+window.hapusData = hapusData;
+window.naikStatus = naikStatus;
+window.exportCSV = exportCSV;
+
+setupLogin();
+startRealtimeListener();
